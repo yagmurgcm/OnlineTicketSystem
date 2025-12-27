@@ -19,7 +19,9 @@ foreach ($tickets as $ticket):
     <div style="border:1px solid black; padding:10px; margin:10px;">
         <b>User:</b> <?= $ticket->username ?><br>
         <b>Date:</b> <?= $ticket->created_at ?><br>
-        <a href="ticket_details.php?id=<?= $ticket->_id ?>">View Details</a>
+        <a href="ticket_details.php?id=<?= (string)$ticket->_id ?>">
+            View Details
+        </a>
     </div>
 <?php endforeach; ?>
 
