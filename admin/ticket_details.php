@@ -1,76 +1,111 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 require "mongo.php";
 
+
 if (!isset($_GET['id'])) {
-    echo "Ticket ID not provided.";
+    die("Ticket ID missing.");
+}
+
+$id = $_GET['id'];
+
+if (!preg_match('/^[a-f\d]{24}$/i', $id)) {
+    die("Invalid Ticket ID.");
+}
+
+$objectId = new MongoDB\BSON\ObjectId($id);
+
+$query  = new MongoDB\Driver\Query(['_id' => $objectId]);
+$result = $manager->executeQuery("$dbName.$collection", $query);
+$ticket = current($result->toArray());
+
+if (!$ticket) {
+    die("Ticket not found.");
+}
+
+$currentStatus = ($ticket->status === true) ? 'active' : 'resolved';
+
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    $reply     = trim($_POST['reply'] ?? '');
+    $newStatus = ($_POST['status'] === 'resolved') ? false : true;
+
+    $update = [
+        '$set' => [
+            'status' => $newStatus
+        ]
+    ];
+
+    if ($reply !== '') {
+        $update['$push'] = [
+            'comments' => [
+                'by'   => 'admin',
+                'text' => $reply,
+                'date' => date('Y-m-d H:i')
+            ]
+        ];
+    }
+
+    $bulk = new MongoDB\Driver\BulkWrite;
+    $bulk->update(['_id' => $objectId], $update);
+    $manager->executeBulkWrite("$dbName.$collection", $bulk);
+
+    header("Location: ticket_details.php?id=$id");
     exit;
 }
-
-$id = new MongoDB\BSON\ObjectId($_GET['id']);
-
-/* Ticket fetch */
-$query = new MongoDB\Driver\Query(['_id' => $id]);
-$ticket = current(
-    $manager->executeQuery("$dbName.$collection", $query)->toArray()
-);
-
-/* Add admin comment */
-if (isset($_POST['add_comment'])) {
-    $bulk = new MongoDB\Driver\BulkWrite;
-
-    $bulk->update(
-        ['_id' => $id],
-        ['$push' => ['comments' => "admin: " . $_POST['comment']]]
-    );
-
-    $manager->executeBulkWrite("$dbName.$collection", $bulk);
-    header("Refresh:0");
-}
-
-/* Mark as resolved */
-if (isset($_POST['resolve'])) {
-    $bulk = new MongoDB\Driver\BulkWrite;
-
-    $bulk->update(
-        ['_id' => $id],
-        ['$set' => ['status' => false]]
-    );
-
-    $manager->executeBulkWrite("$dbName.$collection", $bulk);
-    header("Location: index.php");
-}
 ?>
 
-<h2>Ticket Details</h2>
+<h1>Ticket Details</h1>
 
-<b>User:</b> <?= $ticket->username ?><br>
-<b>Created At:</b> <?= $ticket->created_at ?><br>
-<b>Status:</b> <?= $ticket->status ? "Active" : "Resolved" ?><br>
+<b>User:</b> <?= htmlspecialchars($ticket->username) ?><br>
+<b>Date:</b> <?= htmlspecialchars($ticket->created_at) ?><br>
+<b>Status:</b>
+<strong><?= strtoupper($currentStatus) ?></strong>
 
-<p><b>Message:</b><br><?= $ticket->message ?></p>
+<hr>
 
-<h3>Comments</h3>
+<b>Initial Message:</b>
+<p><?= nl2br(htmlspecialchars($ticket->message)) ?></p>
 
-<?php
-if (count($ticket->comments) === 0) {
-    echo "<p>No comments yet.</p>";
-} else {
-    foreach ($ticket->comments as $c) {
-        echo "<div>- $c</div>";
-    }
-}
-?>
+<hr>
+
+<h3>Conversation</h3>
+
+<?php if (!empty($ticket->comments) && is_array($ticket->comments)): ?>
+    <?php foreach ($ticket->comments as $c): ?>
+        <p>
+            <b><?= strtoupper(htmlspecialchars($c->by)) ?>:</b>
+            <?= htmlspecialchars($c->text) ?><br>
+            <small><?= htmlspecialchars($c->date) ?></small>
+        </p>
+        <hr>
+    <?php endforeach; ?>
+<?php else: ?>
+    <p>No replies yet.</p>
+<?php endif; ?>
+
+<h3>Admin Actions</h3>
 
 <form method="post">
-    <textarea name="comment" rows="4" cols="40" required></textarea><br><br>
-    <button type="submit" name="add_comment">Add Comment</button>
+    <label>Reply:</label><br>
+    <textarea name="reply" rows="4" cols="60"></textarea><br><br>
+
+    <label>Status:</label>
+    <select name="status">
+        <option value="active" <?= ($currentStatus === 'active') ? 'selected' : '' ?>>
+            Active
+        </option>
+        <option value="resolved" <?= ($currentStatus === 'resolved') ? 'selected' : '' ?>>
+            Resolved
+        </option>
+    </select>
+    <br><br>
+
+    <button type="submit">Submit Reply</button>
 </form>
 
 <br>
-
-<form method="post">
-    <button type="submit" name="resolve">Mark as Resolved</button>
-</form>
-
-<br>
-<a href="index.php">← Back to Admin Panel</a>
+<a href="index.php"> Back to Admin Panel</a>
