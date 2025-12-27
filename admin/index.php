@@ -5,21 +5,14 @@ error_reporting(E_ALL);
 
 require "mongo.php";
 
-/*
-|---------------------------------------
-| Status filtresi
-|---------------------------------------
-| ?status=active   → status = true
-| ?status=resolved → status = false
-| default: active
-*/
+
 $status = $_GET['status'] ?? 'active';
 
 if (!in_array($status, ['active', 'resolved'])) {
     $status = 'active';
 }
 
-// STRING → BOOLEAN MAP
+
 $statusBool = ($status === 'active');
 
 $query = new MongoDB\Driver\Query(
@@ -32,7 +25,7 @@ $tickets = $manager->executeQuery("$dbName.$collection", $query);
 
 <h1>Admin Panel – <?= strtoupper($status) ?> Tickets</h1>
 
-<!-- STATUS BUTTONS -->
+
 <div style="margin-bottom:15px;">
     <a href="index.php?status=active">
         <button <?= ($status === 'active') ? 'disabled' : '' ?>>
