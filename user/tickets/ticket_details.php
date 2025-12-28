@@ -1,55 +1,44 @@
 <?php
-// user/tickets/ticket_details.php
 require '../../vendor/autoload.php';
 
-// MongoDB Bağlantısı
 try {
     $manager = new MongoDB\Driver\Manager("mongodb://localhost:27017");
 } catch (MongoDB\Driver\Exception\Exception $e) {
-    die("MongoDB Bağlantı Hatası: " . $e->getMessage());
+    die("MongoDB connection error: " . $e->getMessage());
 }
 
 $id = isset($_GET['id']) ? $_GET['id'] : null;
 $message_status = "";
 
-// ID kontrolü
 if (!$id) {
     die("Error: Ticket ID is missing.");
 }
 
-// ---------------------------------------------------------
-// 1. YENİ YORUM EKLEME İŞLEMİ (Form gönderildiyse çalışır)
-// ---------------------------------------------------------
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $commentUser = $_POST['comment_user'];
     $commentText = $_POST['comment_text'];
     $createdAt = date("Y-m-d H:i:s");
 
-    // Yorum Objesi (PDF Figure 10 yapısına uygun)
     $newComment = [
         'username'   => $commentUser,
         'comment'    => $commentText,
         'created_at' => $createdAt
     ];
 
-    // MongoDB: Belirli bir dökümanın içine ($push) ekleme yap
     $bulk = new MongoDB\Driver\BulkWrite;
     $bulk->update(
-        ['_id' => new MongoDB\BSON\ObjectId($id)], // Hangi bilet?
-        ['$push' => ['comments' => $newComment]]   // Neyi ekle?
+        ['_id' => new MongoDB\BSON\ObjectId($id)], 
+        ['$push' => ['comments' => $newComment]]   
     );
 
     try {
         $manager->executeBulkWrite('cs306.tickets', $bulk);
-        $message_status = "<p style='color: green;'>✅ Comment added!</p>";
+        $message_status = "<p style='color: green;'> Comment added!</p>";
     } catch (MongoDB\Driver\Exception\Exception $e) {
         $message_status = "<p style='color: red;'>Error: " . $e->getMessage() . "</p>";
     }
 }
 
-// ---------------------------------------------------------
-// 2. BİLET BİLGİLERİNİ ÇEKME
-// ---------------------------------------------------------
 try {
     $filter = ['_id' => new MongoDB\BSON\ObjectId($id)];
     $query = new MongoDB\Driver\Query($filter);
@@ -75,7 +64,6 @@ try {
         .details p { margin: 5px 0; }
         .label { font-weight: bold; }
         
-        /* Yorum Kutuları */
         .comments-section { margin-top: 30px; border-top: 1px solid #000; padding-top: 10px; }
         .comment-box { 
             border: 1px solid #999; 
@@ -85,7 +73,6 @@ try {
         }
         .comment-meta { font-size: 0.85em; color: #555; margin-bottom: 5px; }
 
-        /* Form */
         input, textarea { width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 10px; border: 1px solid #ccc; }
         button { padding: 10px 15px; cursor: pointer; background: #ddd; border: 1px solid #999; }
         
@@ -107,7 +94,6 @@ try {
         <h3>Comments:</h3>
 
         <?php 
-        // Eğer comments dizisi boşsa veya yoksa hata vermesin diye kontrol
         $comments = isset($ticket->comments) ? $ticket->comments : []; 
         
         if (count($comments) == 0): ?>

@@ -1,21 +1,17 @@
 <?php
-// Veritabanı Bağlantısı
 $servername = "localhost";
 $username = "root";
 $password = ""; 
-$dbname = "cs306"; // DİKKAT: Burası artık 'cs306'
+$dbname = "cs306"; 
 
-// Bağlantıyı oluştur
 $conn = new mysqli($servername, $username, $password, $dbname);
 
-// Hata kontrolü
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
 $message = "";
 
-// Form gönderildi mi?
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $name = $_POST['name'];
     $surname = $_POST['surname'];
@@ -24,15 +20,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $address = $_POST['address'];
 
     try {
-        // Prosedürü Çağır
         $sql = "CALL sp_add_customer_safe('$name', '$surname', '$email', '$phone', '$address')";
         
         if ($conn->query($sql) === TRUE) {
-            // Başarılı mesajı (PDF tarzı sade)
             $message = "<p style='color: green; font-weight: bold;'>Success: Customer added successfully.</p>";
         }
     } catch (mysqli_sql_exception $e) {
-        // Hata mesajı (Trigger/Procedure hatası)
         $message = "<p style='color: red; font-weight: bold;'>Error: " . $e->getMessage() . "</p>";
     }
 }
@@ -45,12 +38,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <title>Stored Procedure Integration</title>
     <style>
         body {
-            font-family: Arial, sans-serif; /* PDF'teki temiz görünüm için */
+            font-family: Arial, sans-serif; 
             margin: 40px;
             max-width: 600px;
         }
         h3 {
-            border-bottom: 2px solid #ccc; /* Başlık altı çizgi */
+            border-bottom: 2px solid #ccc; 
             padding-bottom: 10px;
         }
         .form-group {
@@ -89,7 +82,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     <h3>Stored Procedure (by Berkay): Adds a new customer safely</h3>
 
-    <p>This form calls the <b>sp_add_customer_safe</b> procedure. It checks if the email exists before inserting.</p>
+    <p>This form calls the sp_add_customer_safe procedure. It checks if the email exists before inserting.</p>
 
     <?php echo $message; ?>
 

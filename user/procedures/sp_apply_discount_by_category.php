@@ -1,13 +1,19 @@
 <?php
-session_start();
-require_once __DIR__ . "/../db_connect.php";
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "cs306";
 
-$msg = "";
-$conn = db_connect();
+$conn = new mysqli($servername, $username, $password, $dbname);
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
 
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
+$msg = "";
 $categories = [];
+
 try {
     $res = $conn->query("
         SELECT DISTINCT product_type
@@ -52,7 +58,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $conn->commit();
 
             $msg = "Procedure executed successfully. Category = " . htmlspecialchars($selected_category) .
-                   ", Discount = " . (int)$rate_int . "%, Rows affected = " . (int)$affected . ".";
+                   ", Discount = " . (int)$rate_int ;
         } catch (mysqli_sql_exception $e) {
             $conn->rollback();
             $msg = "Execution failed: " . $e->getMessage();

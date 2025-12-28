@@ -27,7 +27,7 @@ session_start();
 
 <div style="border:1px solid #000; padding:12px; margin-bottom:14px;">
   <b>Trigger 3 (by Sinan Altıntuğ):</b> Prevents inserting products with negative prices and displays an error message.<br>
-  <a href="add_product.php">Go to the trigger's page</a>
+  <a href="triggers/add_product.php">Go to the trigger's page</a>
 </div>
 
 <hr>

@@ -7,10 +7,8 @@ if ($conn->connect_error) {
     die("DB connection failed");
 }
 
-/* ORDERS */
 $orders = $conn->query("SELECT order_id FROM `order`");
 
-/* PRODUCTS */
 $products = $conn->query("SELECT product_id, product_name, price FROM product");
 
 $message = "";
@@ -22,22 +20,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $product_id = $_POST["product_id"];
     $quantity = $_POST["quantity"];
 
-    // order total BEFORE
     $res = $conn->query("SELECT total_amount FROM `order` WHERE order_id=$order_id");
     $before = $res->fetch_assoc()["total_amount"];
 
-    // product price
     $res = $conn->query("SELECT price FROM product WHERE product_id=$product_id");
     $price = $res->fetch_assoc()["price"];
     $subtotal = $price * $quantity;
 
-    // INSERT (this triggers after_orderdetail_update_total)
-    $conn->query("
-        INSERT INTO orderdetail (order_id, product_id, quantity, subtotal)
-        VALUES ($order_id, $product_id, $quantity, $subtotal)
-    ");
+    $conn->query("CALL sp_add_order_item($order_id, $product_id, $quantity, $subtotal)");
 
-    // order total AFTER
     $res = $conn->query("SELECT total_amount FROM `order` WHERE order_id=$order_id");
     $after = $res->fetch_assoc()["total_amount"];
 
@@ -56,9 +47,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <h3>sp_add_order_item</h3>
 
 <p>
-This page demonstrates the logic of the stored procedure
-<b>sp_add_order_item</b>.  
-The actual effect is shown via database trigger execution.
+This stored procedure streamlines the order management process by allowing the direct insertion of products into an active order. It handles the data entry logic and ensures the total order amount is recalculated immediately upon execution.
 </p>
 
 <form method="post">
@@ -103,7 +92,7 @@ The actual effect is shown via database trigger execution.
 <?php endif; ?>
 
 <br>
-<a href="../index.php">⬅ Back to User Home</a>
+<a href="../index.php"> Back to User Home</a>
 
 </body>
 </html>

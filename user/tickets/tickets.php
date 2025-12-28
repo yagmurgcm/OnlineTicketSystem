@@ -1,15 +1,12 @@
 <?php
-// Klasörün içine girdiğimiz için vendor iki üstte kaldı (../../)
 require '../../vendor/autoload.php'; 
 
-// MongoDB Bağlantısı
 try {
     $manager = new MongoDB\Driver\Manager("mongodb://localhost:27017");
 } catch (MongoDB\Driver\Exception\Exception $e) {
-    die("MongoDB Bağlantı Hatası: " . $e->getMessage());
+    die("MongoDB connection  error: " . $e->getMessage());
 }
 
-// Dropdown için kullanıcıları çek
 $command = new MongoDB\Driver\Command([
     'distinct' => 'tickets',
     'key' => 'username',
@@ -37,7 +34,6 @@ if ($selectedUser) {
     <style>
         body { font-family: Arial, sans-serif; margin: 40px; max-width: 800px; }
         .top-links { margin-bottom: 20px; }
-        /* Linkleri belirgin yap */
         a { color: blue; text-decoration: underline; } 
         .ticket-box { border: 1px solid #000; padding: 10px; margin-bottom: 10px; }
     </style>
@@ -45,7 +41,7 @@ if ($selectedUser) {
 <body>
 
     <div class="top-links">
-        <a href="../index.php">⬅️ Back to Home</a>
+        <a href="../index.php"> Back to Home</a>
     </div>
 
     <h3>Support Tickets (Active Only)</h3>

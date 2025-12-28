@@ -1,11 +1,10 @@
 <?php
-// Vendor yolu güncellendi
 require '../../vendor/autoload.php'; 
 
 try {
     $manager = new MongoDB\Driver\Manager("mongodb://localhost:27017");
 } catch (MongoDB\Driver\Exception\Exception $e) {
-    die("MongoDB Bağlantı Hatası: " . $e->getMessage());
+    die("MongoDB connection error: " . $e->getMessage());
 }
 
 $message_status = "";
@@ -28,10 +27,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     try {
         $manager->executeBulkWrite('cs306.tickets', $bulk);
-        // Başarılı olunca linki göster
-        $message_status = "<p style='color: green;'>✅ Ticket created! <a href='tickets.php'>Go back to list</a></p>";
+        $message_status = "<p style='color: green;'> Ticket created! <a href='tickets.php'>Go back to list</a></p>";
     } catch (MongoDB\Driver\Exception\Exception $e) {
-        $message_status = "<p style='color: red;'>🛑 Error: " . $e->getMessage() . "</p>";
+        $message_status = "<p style='color: red;'> Error: " . $e->getMessage() . "</p>";
     }
 }
 ?>

@@ -1,9 +1,9 @@
 <?php
-// Veritabanı Bağlantısı
+
 $servername = "localhost";
 $username = "root";
 $password = "";
-$dbname = "cs306"; // Veritabanı ismin
+$dbname = "cs306"; 
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 if ($conn->connect_error) {
@@ -12,60 +12,57 @@ if ($conn->connect_error) {
 
 $message = "";
 
-// POST İŞLEMİ (Butonlara basılınca)
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
-    // Formdan gelen verileri al
     $selected_product_id = (int)$_POST['product_id'];
     
     $qty_to_buy = 0;
     if (isset($_POST['case1'])) {
-        $qty_to_buy = 1; // Case 1
+        $qty_to_buy = 1; 
     } elseif (isset($_POST['case2'])) {
-        $qty_to_buy = 10; // Case 2
+        $qty_to_buy = 10; 
     }
 
     if ($qty_to_buy > 0 && $selected_product_id > 0) {
         
-        // Önce seçilen ürünün eski stoğunu öğren (Raporlamak için)
-        $sql_old = "SELECT stock FROM product WHERE product_id = $selected_product_id";
-        $res_old = $conn->query($sql_old);
-        $row_old = $res_old->fetch_assoc();
-        $old_stock = $row_old['stock'];
+        $sql_prod = "SELECT price, stock FROM product WHERE product_id = $selected_product_id";
+        $res_prod = $conn->query($sql_prod);
+        
+        if ($res_prod && $row_prod = $res_prod->fetch_assoc()) {
+            $unit_price = $row_prod['price']; 
+            $old_stock  = $row_prod['stock'];
 
-        try {
-            // INSERT işlemi (Trigger burada devreye girer)
-            // subtotal sütunu senin tablonda olduğu için ekledim
-            $sql = "INSERT INTO orderdetail (order_id, product_id, quantity, subtotal) 
-                    VALUES (1, $selected_product_id, $qty_to_buy, 500)";
-            
-            if ($conn->query($sql) === TRUE) {
-                // İşlem başarılı, yeni stoğu çek
-                $sql_new = "SELECT stock FROM product WHERE product_id = $selected_product_id";
-                $res_new = $conn->query($sql_new);
-                $row_new = $res_new->fetch_assoc();
-                $new_stock = $row_new['stock'];
+            $calculated_subtotal = $unit_price * $qty_to_buy;
 
-                // Basit metin mesajı
-                $message = "<p><strong>SUCCESS:</strong> Product ID $selected_product_id purchased.<br>" .
-                           "Ordered: $qty_to_buy items.<br>" .
-                           "Old Stock: $old_stock <br>" .
-                           "New Stock: $new_stock (Trigger Worked!)</p><hr>";
+            try {
+          
+                $sql = "INSERT INTO orderdetail (order_id, product_id, quantity, subtotal) 
+                        VALUES (1, $selected_product_id, $qty_to_buy, $calculated_subtotal)";
+                
+                if ($conn->query($sql) === TRUE) {
+                   
+                    $sql_new = "SELECT stock FROM product WHERE product_id = $selected_product_id";
+                    $res_new = $conn->query($sql_new);
+                    $row_new = $res_new->fetch_assoc();
+                    $new_stock = $row_new['stock'];
+
+                    $message = "<p><strong>SUCCESS:</strong> Product ID $selected_product_id purchased.<br>" .
+                               "Unit Price: $unit_price <br>" .
+                               "Quantity: $qty_to_buy <br>" .
+                               "<strong>Calculated Subtotal: $calculated_subtotal </strong> (Corrected!)<br>" .
+                               "Old Stock: $old_stock <br>" .
+                               "New Stock: $new_stock (Trigger Worked!)</p><hr>";
+                }
+            } catch (Exception $e) {
+                $message = "<p><strong>ERROR:</strong> " . $e->getMessage() . "</p><hr>";
             }
-        } catch (Exception $e) {
-            $message = "<p><strong>ERROR:</strong> " . $e->getMessage() . "</p><hr>";
+        } else {
+            $message = "<p>Error: Product not found or no price set.</p><hr>";
         }
     }
 }
 
-// DROPDOWN İÇİN ÜRÜNLERİ ÇEK
-// Tüm ürünleri listeliyoruz ki istediğini seçebilesin
-$product_list = [];
-$sql_products = "SELECT product_id, product_name, stock FROM product"; 
-// NOT: Eğer tablonun adı 'name' ise 'product_name' kısmını 'name' yap.
-// Genelde product tablosunda 'name', 'title' veya 'product_name' olur.
-// Hata alırsan burayı kontrol et.
-
+$sql_products = "SELECT product_id, product_name, stock, price FROM product"; 
 $result = $conn->query($sql_products);
 ?>
 
@@ -78,8 +75,9 @@ $result = $conn->query($sql_products);
 <body>
 
     <h3>Trigger: Auto-Update Stock</h3>
-    <p>Select a product and simulate a purchase to test the trigger.</p>
-    <hr>
+    <p>
+        This page demonstrates the automated inventory management trigger. When a new order item is recorded, the database automatically deducts the purchased quantity from the product's available stock to ensure real-time data consistency.
+    </p>
 
     <?php echo $message; ?>
 
@@ -89,12 +87,11 @@ $result = $conn->query($sql_products);
             <?php 
             if ($result && $result->num_rows > 0) {
                 while($row = $result->fetch_assoc()) {
-                    // Eğer tablonuzda isim sütunu 'name' ise aşağıyı $row['name'] yapın
-                    // Ben garanti olsun diye ID ve Stock yazdırıyorum.
                     $p_name = isset($row['product_name']) ? $row['product_name'] : "Product " . $row['product_id'];
+                    $p_price = isset($row['price']) ? $row['price'] : "0";
                     
                     echo "<option value='" . $row['product_id'] . "'>" . 
-                         $p_name . " (Stock: " . $row['stock'] . ")" . 
+                         $p_name . " (Stock: " . $row['stock'] . " - Price: " . $p_price . ")" . 
                          "</option>";
                 }
             } else {

@@ -1,18 +1,16 @@
 <?php
 require '../../vendor/autoload.php';
 
-// DÖKÜMAN KURALI (Sayfa 12): MongoDB Driver Manager kullanılmalı 
+
 try {
     $manager = new MongoDB\Driver\Manager("mongodb://localhost:27017");
 } catch (MongoDB\Driver\Exception\Exception $e) {
-    die("MongoDB Bağlantı Hatası: " . $e->getMessage());
+    die("MongoDB connection error: " . $e->getMessage());
 }
 
-// 1. Adım: Dropdown için Kullanıcıları Çek
-// Döküman Kuralı: Sadece aktif bileti olan kullanıcılar listelenmeli [cite: 80]
 $command = new MongoDB\Driver\Command([
     'distinct' => 'tickets',
-    'key' => 'username',     // Döküman: username [cite: 201]
+    'key' => 'username',     
     'query' => ['status' => true]
 ]);
 
@@ -53,7 +51,7 @@ if ($selectedUser) {
 <body>
 
     <div class="top-links">
-        <a href="../index.php">⬅️ Back to Home</a>
+        <a href="../index.php"> Back to Home</a>
     </div>
 
     <h3>Support Tickets (Active Only)</h3>
